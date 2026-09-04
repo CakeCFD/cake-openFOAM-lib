@@ -11,8 +11,12 @@ exists because `openfoam.com`, the primary distribution point for OpenFOAM
 Hosting the same release on GitHub gives those environments a working
 install path.
 
-This repository redistributes official OpenFOAM releases unmodified. It does
-not build, patch or repackage the solver in any way.
+This repository redistributes official OpenFOAM releases with one deliberate
+patch: `etc/bashrc`'s `WM_PROJECT_DIR` is changed from a path hardcoded to the
+apt install location (`/usr/lib/openfoam/openfoam2412`, which Debian's own
+packaging bakes in) to self-detect its location at source time, so the
+archive can be extracted anywhere. The solver itself is untouched: no
+source, binaries, or numerics are built, patched or repackaged.
 
 ## Copyright
 
@@ -29,7 +33,8 @@ OpenFOAM Foundation.
 
 | Path | Contents |
 |---|---|
-| `releases/2412/` | OpenFOAM 2412 (ESI/OpenCFD distribution), as published at [openfoam.com](https://www.openfoam.com/) |
+| `releases/2412/` | OpenFOAM 2412 (ESI/OpenCFD distribution), as published at [openfoam.com](https://www.openfoam.com/), with the `WM_PROJECT_DIR` relocation patch described above |
+| `releases/2412/` (MPI bundle) | A minimal, relocatable OpenMPI 4.1 runtime (`mpirun`, `libmpi`, and the MCA plugin set); see MPI below |
 
 Each release directory contains the same archive distributed by OpenCFD,
 alongside a `SHA256SUMS` file so a download here can be verified against the
@@ -37,7 +42,7 @@ original.
 
 **Version note:** OpenFOAM has two distributions with incompatible version
 schemes. This repository mirrors the ESI/OpenCFD distribution
-(`openfoam.com`), versioned `YYMM` (`2412` = December 2024) — the one
+(`openfoam.com`), versioned `YYMM` (`2412` = December 2024), the one
 CakeCFD and cakecfd-ai are built against. It is unrelated to the OpenFOAM
 Foundation's distribution (`openfoam.org`), which uses integer version
 numbers (`OpenFOAM-11`, `-12`, ...) and is not compatible with CakeCFD's
@@ -63,10 +68,34 @@ it is unset:
 export OF_BASHRC=/opt/openfoam2412/etc/bashrc
 ```
 
+## MPI
+
+OpenFOAM's `WM_MPLIB=SYSTEMOPENMPI` setting normally expects the distro's own
+OpenMPI install (`apt-get install openmpi-bin libopenmpi3`). For environments
+where that apt install isn't practical either, this release also carries a
+self-contained, relocatable OpenMPI 4.1 runtime, no root and no system
+package manager needed:
+
+```bash
+curl -L -o mpi.tar.gz \
+    https://github.com/CakeCFD/cake-openFOAM-lib/releases/download/v2412/mpi-openmpi-2412-linux-x86_64.tar.gz
+tar -xzf mpi.tar.gz -C /opt
+source /opt/mpi-openmpi-2412-linux-x86_64/activate.sh
+```
+
+`activate.sh` sets `PATH`, `LD_LIBRARY_PATH` and
+`OMPI_MCA_mca_base_component_path` relative to wherever you extracted it.
+Source the OpenFOAM `bashrc` above first, then this, and `mpirun` /
+`decomposePar`-based parallel runs work without any system OpenMPI install.
+This bundle is tied to glibc/Ubuntu 24.04-era ABI, matching the OpenFOAM
+build above; on a materially different distro, install OpenMPI via that
+distro's own package manager instead.
+
 ## Verifying a download
 
 ```bash
 sha256sum -c SHA256SUMS
+sha256sum -c MPI_SHA256SUMS
 ```
 
 ## Reporting problems
