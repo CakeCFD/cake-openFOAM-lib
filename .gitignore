@@ -1,0 +1,4 @@
+# Release archives are uploaded as GitHub Release assets, not committed to
+# git — GitHub rejects any pushed file over 100MB, and this tarball is ~153MB.
+# See README.md "Usage" for the actual download URL once a release exists.
+/releases/
