@@ -2,67 +2,61 @@
 
 ## About OpenFOAM-lib
 
-OpenFOAM-lib is a GitHub-hosted mirror of the OpenFOAM binaries that
+OpenFOAM-lib provides OpenFOAM 2412 as a relocatable archive for systems where
+the official apt packages cannot be used. It is an unofficial mirror
+maintained by the CakeCFD project for use with
 [CakeCFD](https://github.com/CakeCFD/cake-studio) and
-[cakecfd-ai](https://github.com/CakeCFD/cakecfd-ai) build and run against. It
-exists because `openfoam.com`, the primary distribution point for OpenFOAM
-2412, is not reachable from every environment a CakeCFD tool runs in
-(notably, it is blocked from Claude chat sessions without terminal access).
-Hosting the same release on GitHub gives those environments a working
-install path.
+[cakecfd-ai](https://github.com/CakeCFD/cakecfd-ai). Where you can, install
+OpenFOAM from [openfoam.com](https://www.openfoam.com/download) instead.
 
-This repository redistributes official OpenFOAM releases with one deliberate
-patch: `etc/bashrc`'s `WM_PROJECT_DIR` is changed from a path hardcoded to the
-apt install location (`/usr/lib/openfoam/openfoam2412`, which Debian's own
-packaging bakes in) to self-detect its location at source time, so the
-archive can be extracted anywhere. The solver itself is untouched: no
-source, binaries, or numerics are built, patched or repackaged.
+The archive is the OpenFOAM 2412 Ubuntu 24.04 package tree with one change:
+WM_PROJECT_DIR in etc/bashrc detects its own location instead of assuming
+/usr/lib/openfoam/openfoam2412, so the archive can be extracted anywhere.
+Nothing is rebuilt, and the solver binaries are unchanged.
 
 ## Copyright
 
-OpenFOAM itself is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by the Free
-Software Foundation, either version 3 of the License, or (at your option) any
-later version. See the file `LICENSE` in this directory, or
+OpenFOAM is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. See the file LICENSE in this directory, or
 <https://www.gnu.org/licenses/>, for the terms under which you can copy the
-files. OpenFOAM is a registered trademark of OpenCFD Limited; this repository
-is an independent mirror and is not affiliated with OpenCFD Limited or the
-OpenFOAM Foundation.
+files. OpenFOAM is a registered trademark of OpenCFD Limited. This repository
+is an independent mirror and is not affiliated with or endorsed by OpenCFD
+Limited or the OpenFOAM Foundation.
 
-## Contents
+## Release assets
 
-| Path | Contents |
+| Asset | Contents |
 |---|---|
-| `releases/2412/` | OpenFOAM 2412 (ESI/OpenCFD distribution), as published at [openfoam.com](https://www.openfoam.com/), with the `WM_PROJECT_DIR` relocation patch described above |
-| `releases/2412/` (MPI bundle) | A minimal, relocatable OpenMPI 4.1 runtime (`mpirun`, `libmpi`, and the MCA plugin set); see MPI below |
+| openfoam2412-linux-x86_64.tar.gz | OpenFOAM 2412 (ESI/OpenCFD distribution) with the relocation change above |
+| mpi-openmpi-2412-linux-x86_64.tar.gz | A minimal relocatable OpenMPI 4.1 runtime, see MPI below |
+| SHA256SUMS, MPI_SHA256SUMS | SHA-256 checksums of the two archives |
 
-Each release directory contains the same archive distributed by OpenCFD,
-alongside a `SHA256SUMS` file so a download here can be verified against the
-original.
+The checksums confirm that a download matches what was published here.
 
 **Version note:** OpenFOAM has two distributions with incompatible version
 schemes. This repository mirrors the ESI/OpenCFD distribution
-(`openfoam.com`), versioned `YYMM` (`2412` = December 2024), the one
-CakeCFD and cakecfd-ai are built against. It is unrelated to the OpenFOAM
-Foundation's distribution (`openfoam.org`), which uses integer version
-numbers (`OpenFOAM-11`, `-12`, ...) and is not compatible with CakeCFD's
-dictionaries or the TENO scheme library's API.
+(openfoam.com), versioned YYMM (2412 is December 2024), which CakeCFD and
+cakecfd-ai are built against. The OpenFOAM Foundation distribution
+(openfoam.org) uses integer versions such as OpenFOAM-12 and is not compatible
+with CakeCFD's dictionaries or the TENO scheme library.
 
 ## Usage
 
-Download and extract a release, then source its environment before building
-or running anything that depends on OpenFOAM:
+Download the archive and its checksum file, verify, then extract and source
+the environment:
 
 ```bash
-curl -L -o openfoam2412.tar.gz \
-    https://github.com/CakeCFD/cake-openFOAM-lib/releases/download/v2412/openfoam2412-linux-x86_64.tar.gz
-tar -xzf openfoam2412.tar.gz -C /opt
+base=https://github.com/CakeCFD/cake-openFOAM-lib/releases/download/v2412
+curl -LO $base/openfoam2412-linux-x86_64.tar.gz -LO $base/SHA256SUMS
+sha256sum -c SHA256SUMS
+sudo tar -xzf openfoam2412-linux-x86_64.tar.gz -C /opt
 source /opt/openfoam2412/etc/bashrc
 ```
 
-`cakecfd-ai` reads the environment script path from the `OF_BASHRC`
-environment variable, falling back to the standard apt install location if
-it is unset:
+cakecfd-ai reads the environment script from OF_BASHRC, falling back to the
+standard apt location when it is unset:
 
 ```bash
 export OF_BASHRC=/opt/openfoam2412/etc/bashrc
@@ -70,35 +64,26 @@ export OF_BASHRC=/opt/openfoam2412/etc/bashrc
 
 ## MPI
 
-OpenFOAM's `WM_MPLIB=SYSTEMOPENMPI` setting normally expects the distro's own
-OpenMPI install (`apt-get install openmpi-bin libopenmpi3`). For environments
-where that apt install isn't practical either, this release also carries a
-self-contained, relocatable OpenMPI 4.1 runtime, no root and no system
-package manager needed:
+The build uses WM_MPLIB=SYSTEMOPENMPI and normally expects the distribution's
+OpenMPI (sudo apt-get install openmpi-bin libopenmpi3), which is the preferred
+route. Where that is not possible, the release carries a relocatable OpenMPI
+4.1 runtime that needs no root access:
 
 ```bash
-curl -L -o mpi.tar.gz \
-    https://github.com/CakeCFD/cake-openFOAM-lib/releases/download/v2412/mpi-openmpi-2412-linux-x86_64.tar.gz
-tar -xzf mpi.tar.gz -C /opt
-source /opt/mpi-openmpi-2412-linux-x86_64/activate.sh
-```
-
-`activate.sh` sets `PATH`, `LD_LIBRARY_PATH` and
-`OMPI_MCA_mca_base_component_path` relative to wherever you extracted it.
-Source the OpenFOAM `bashrc` above first, then this, and `mpirun` /
-`decomposePar`-based parallel runs work without any system OpenMPI install.
-This bundle is tied to glibc/Ubuntu 24.04-era ABI, matching the OpenFOAM
-build above; on a materially different distro, install OpenMPI via that
-distro's own package manager instead.
-
-## Verifying a download
-
-```bash
-sha256sum -c SHA256SUMS
+base=https://github.com/CakeCFD/cake-openFOAM-lib/releases/download/v2412
+curl -LO $base/mpi-openmpi-2412-linux-x86_64.tar.gz -LO $base/MPI_SHA256SUMS
 sha256sum -c MPI_SHA256SUMS
+tar -xzf mpi-openmpi-2412-linux-x86_64.tar.gz -C "$HOME"
+source "$HOME/mpi-openmpi-2412-linux-x86_64/activate.sh"
 ```
+
+activate.sh only adds the bundled bin and lib directories to PATH and
+LD_LIBRARY_PATH and sets OMPI_MCA_mca_base_component_path. Read it before
+sourcing it. Source the OpenFOAM bashrc first, then activate.sh. The runtime
+targets Ubuntu 24.04's glibc, so on other distributions install OpenMPI with
+the system package manager instead.
 
 ## Reporting problems
 
-Please report defects (a corrupted archive, a checksum mismatch, a missing
-release) through the GitHub issue tracker for this repository.
+Please report defects such as a corrupted archive, a checksum mismatch or a
+missing release through the GitHub issue tracker for this repository.
