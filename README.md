@@ -12,7 +12,6 @@ OpenFOAM from [openfoam.com](https://www.openfoam.com/download) instead.
 The archive is the OpenFOAM 2412 Ubuntu 24.04 package tree with one change:
 WM_PROJECT_DIR in etc/bashrc detects its own location instead of assuming
 /usr/lib/openfoam/openfoam2412, so the archive can be extracted anywhere.
-Nothing is rebuilt, and the solver binaries are unchanged.
 
 ## Copyright
 
